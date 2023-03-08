@@ -3,6 +3,9 @@ import SingleVideo from '../components/SingleVideo';
 import {useParams} from 'react-router-dom'
 import {AiOutlineLoading3Quarters} from 'react-icons/ai';
 import { config } from '../apiKey';
+import { useQuery } from '@tanstack/react-query';
+import axios from 'axios';
+import NotFound from './NotFound';
 
 export interface SingleItem{
     id: {
@@ -10,6 +13,7 @@ export interface SingleItem{
     },
     snippet: {
         publishedAt: string;
+        channelId: string;
         title: string;
         description: string;
         thumbnails: {
@@ -40,24 +44,20 @@ export interface SingleItem{
 
 
 export default function Home() {
-    const [videos, setVideos] = useState<Array<SingleItem>|undefined>(undefined);
-    const [loading, setLoading] = useState<boolean>(false);
-
+    // const [videos, setVideos] = useState<Array<SingleItem>|undefined>(undefined);
     const {search} = useParams();
 
-    useEffect(()=>{
-        setLoading(false);
-        fetch(`https://youtube.googleapis.com/youtube/v3/search?part=snippet&type=video&order=date&maxResults=50&q=${search}&key=${config.key}`)
-        .then((res)=>res.json())
-        .then(data=>{
-            setVideos(data.items);
-            console.log(data.items,'ITEMS');
-        })
-        .catch((e)=>console.log(e))
-        .finally(()=>setLoading(true));
-    },[search]);
-
-    if(loading){
+    const {isLoading, error, data:videos} = useQuery(
+        ['videos', search], async function queryFn() : Promise<Array<SingleItem>> {
+            return axios
+            .get(`https://youtube.googleapis.com/youtube/v3/search?part=snippet&type=video&order=date&maxResults=50&q=${search}&key=${config.key}`)
+            .then(res=>res.data.items);
+        },
+        {
+            staleTime:1000 * 60 * 50
+        }
+    )
+    if(!isLoading){
         return (
             <div style={{
                 height:'100vh', 
@@ -77,6 +77,11 @@ export default function Home() {
                     })
                 }
             </div>
+        )
+    }
+    if(error){
+        return(
+            <NotFound/>
         )
     }
     return (
