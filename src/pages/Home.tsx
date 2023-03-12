@@ -2,10 +2,9 @@ import {useEffect, useState} from 'react'
 import SingleVideo from '../components/SingleVideo';
 import {useParams} from 'react-router-dom'
 import {AiOutlineLoading3Quarters} from 'react-icons/ai';
-import { config } from '../apiKey';
-import { useQuery } from '@tanstack/react-query';
-import axios from 'axios';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import NotFound from './NotFound';
+import { useYoutubeApi } from '../context/YoutubeApiContext';
 
 export interface SingleItem{
     id: {
@@ -45,37 +44,30 @@ export interface SingleItem{
 
 export default function Home() {
     // const [videos, setVideos] = useState<Array<SingleItem>|undefined>(undefined);
-    const {search} = useParams();
-
-    const {isLoading, error, data:videos} = useQuery(
-        ['videos', search], async function queryFn() : Promise<Array<SingleItem>> {
-            return axios
-            .get(`https://youtube.googleapis.com/youtube/v3/search?part=snippet&type=video&order=date&maxResults=50&q=${search}&key=${config.key}`)
-            .then(res=>res.data.items);
-        },
-        {
-            staleTime:1000 * 60 * 50
-        }
+    const {searchWord} = useParams();
+    const {youtube} = useYoutubeApi();
+    // const queryClient = useQueryClient();
+    const {isLoading, error, data:videos} = useQuery({
+        queryKey: ['videos',searchWord],
+        queryFn:()=>youtube.search(searchWord),
+        refetchOnWindowFocus: false,
+        // initialData:()=>[],
+        staleTime:1000 * 60 * 30,
+        // initialDataUpdatedAt:()=>queryClient.getQueryState(['videos','start'])?.dataUpdatedAt
+    }
     )
-    if(!isLoading){
+    if(isLoading){
         return (
+        
             <div style={{
-                height:'100vh', 
-                gridTemplateColumns: 'repeat(auto-fill, minmax(325px, 325px))',
-                gridAutoRows: '280px',
-                display:'grid',
+                display:'flex',
                 justifyContent:'center',
-                columnGap: '20px',
-                rowGap: '20px',
-                marginTop:'50px'
+                alignItems:'center',
+                color:'white',
+                height:'100vh',
+                fontSize:'30px'
             }}>
-                {
-                    videos?.map((element)=>{
-                        return(
-                            <SingleVideo item={element} key={element.id.videoId}/>
-                        )
-                    })
-                }
+                <AiOutlineLoading3Quarters style={{animation: 'spin 1s infinite linear'}}/>
             </div>
         )
     }
@@ -86,14 +78,22 @@ export default function Home() {
     }
     return (
         <div style={{
-            display:'flex',
+            height:'100vh', 
+            gridTemplateColumns: 'repeat(auto-fill, minmax(325px, 325px))',
+            gridAutoRows: '280px',
+            display:'grid',
             justifyContent:'center',
-            alignItems:'center',
-            color:'white',
-            height:'100vh',
-            fontSize:'30px'
+            columnGap: '20px',
+            rowGap: '20px',
+            marginTop:'50px'
         }}>
-            <AiOutlineLoading3Quarters style={{animation: 'spin 1s infinite linear'}}/>
+            {
+                videos?.map((element:any)=>{
+                    return(
+                        <SingleVideo item={element} key={element.id.videoId}/>
+                    )
+                })
+            }
         </div>
     )
 }

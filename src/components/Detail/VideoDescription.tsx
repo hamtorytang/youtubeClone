@@ -1,9 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
 import React from 'react'
+import { useYoutubeApi } from '../../context/YoutubeApiContext';
 import { SingleItem } from '../../pages/Home'
 import NotFound from '../../pages/NotFound';
-import { config } from '../../apiKey';
 interface VideoDescriptionProps{
     data: SingleItem;
 }
@@ -34,18 +34,16 @@ interface ChannelInfoProps{
     }
 }
 export default function VideoDescription({data}:VideoDescriptionProps) {
+    const {youtube} = useYoutubeApi();
 
     const {isLoading, error, data:channelData} = useQuery(
-        ['videos', data.snippet.channelId], async function queryFn() : Promise<Array<ChannelInfoProps>> {
-            console.log(data.snippet.channelId,'changeeelid');
-            return axios
-            .get(`https://www.googleapis.com/youtube/v3/channels?part=snippet&id=${data.snippet.channelId}&key=${config.key}`)
-            .then(res=>res.data.items);
-        },
+        ['description', data.snippet.channelId], ()=>youtube.description(data.snippet.channelId),
         {
             staleTime:1000 * 60 * 50
         }
     )
+
+    
     if(isLoading){
         return(
         <div style={{color:'white', maxWidth:'640px'}}>

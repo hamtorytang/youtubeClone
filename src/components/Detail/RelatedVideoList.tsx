@@ -1,24 +1,28 @@
 import {useState, useEffect} from 'react'
 import { SingleItem } from '../../pages/Home';
 import SingleVideo from '../SingleVideo';
-import {config} from '../../apiKey';
 import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
 import NotFound from '../../pages/NotFound';
+import { useYoutubeApi } from '../../context/YoutubeApiContext';
 
 interface RelatedVideoListProps{
     id:string|undefined;
 }
 
 export default function RelatedVideoList({id}:RelatedVideoListProps) {
+    console.log(id,'fro related')
     const [directionRow, setDirectionRow] = useState<boolean>(false);
     const handleResize = ()=>{
         const containerSize = document.querySelector('.video--detail_wrapper');
-
+        
         const videoContainerWidth = containerSize?.getClientRects()[0].width as number;
-        if(Number(videoContainerWidth) < 1200){
+        if(videoContainerWidth < 1200){
+            // console.log("true", videoContainerWidth.toString())
+
             setDirectionRow(true);
         }else{
+            // console.log("false", videoContainerWidth.toString())
             setDirectionRow(false);
         }
     }
@@ -27,14 +31,16 @@ export default function RelatedVideoList({id}:RelatedVideoListProps) {
         return(()=>{
             window.removeEventListener('resize',handleResize);
         })
-    })
+    },[])
+
+    useEffect(()=>{
+        handleResize();
+    },[])
+
+    const {youtube} = useYoutubeApi();
 
     const {isLoading, error, data:list} = useQuery(
-        ['videos', id], async function queryFn() : Promise<Array<SingleItem>> {
-            return axios
-            .get(`https://youtube.googleapis.com/youtube/v3/search?part=snippet&type=video&order=viewCount&maxResults=20&relatedToVideoId=${id}&type=video&key=${config.key}`)
-            .then(res=>res.data.items);
-        },
+        ['related', id], ()=>youtube.related(id),
         {
             staleTime:1000 * 60 * 50
         }
@@ -55,7 +61,7 @@ export default function RelatedVideoList({id}:RelatedVideoListProps) {
     return (
         <ul style={{color:'white'}}>
             {
-                list?.map((element)=>{
+                list?.map((element:any)=>{
                     return(
                         <li style={{
                             listStyle:'none', 

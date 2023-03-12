@@ -16,6 +16,7 @@ const INITIAL_VIDEO_WIDTH = 850;
 const INITIAL_VIDEO_HEIGHT = 478;
 
 export default function Video({id}:VideoProps) {
+    console.log(id,'from VIDEO');
     const [size, setSize] = useState<SizeProps>({width:INITIAL_VIDEO_WIDTH, height:INITIAL_VIDEO_HEIGHT});
     const handleResize = ()=>{
         const containerSize = document.querySelector('.video--detail_wrapper');
